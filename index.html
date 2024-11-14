@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Survival Prediction</title>
+</head>
+<body>
+    <h1>Titanic Survival Prediction</h1>
+
+    <!-- 예측 결과 출력 -->
+    <div id="result">
+        <h2>Prediction Results:</h2>
+        <pre id="prediction-output"></pre>
+    </div>
+
+    <script>
+        // CSV 데이터를 읽고 파싱하는 함수
+        async function loadCSVData(filePath) {
+            const response = await fetch(filePath);
+            const csvText = await response.text();
+            const rows = csvText.split('\n');
+            const headers = rows[0].split(',');
+
+            const data = rows.slice(1).map(row => {
+                const values = row.split(',');
+                const rowObject = {};
+                headers.forEach((header, index) => {
+                    rowObject[header.trim()] = values[index] ? values[index].trim() : '';
+                });
+                return rowObject;
+            });
+
+            return data;
+        }
+
+        // 데이터 전처리 함수
+        function preprocessData(data) {
+            return data.map(row => {
+                return [
+                    parseInt(row['Pclass']),
+                    parseInt(row['Age']) || 0,  // Age가 없으면 0으로 처리
+                    parseFloat(row['Fare']),
+                    row['Sex'] === 'female' ? 1 : 0 // Sex: female -> 1, male -> 0
+                ];
+            });
+        }
+
+        // Sigmoid 함수
+        function sigmoid(x) {
+            return 1 / (1 + Math.exp(-x));
+        }
+
+        // 신경망 클래스 정의
+        class NeuralNetwork {
+            constructor(inputSize, hiddenSize, outputSize) {
+                this.inputSize = inputSize;
+                this.hiddenSize = hiddenSize;
+                this.outputSize = outputSize;
+
+                // 가중치 초기화
+                this.weights1 = Array(inputSize).fill().map(() => Array(hiddenSize).fill(Math.random()));
+                this.bias1 = Array(hiddenSize).fill(Math.random());
+
+                this.weights2 = Array(hiddenSize).fill().map(() => Array(outputSize).fill(Math.random()));
+                this.bias2 = Array(outputSize).fill(Math.random());
+            }
+
+            // 예측 함수 (Forward Propagation)
+            predict(input) {
+                this.input = input;
+                this.hidden = input.map((_, i) => Math.max(0, this.vecMatMul([this.input[i]], this.weights1)[0] + this.bias1[i]));
+                this.output = this.hidden.map((_, i) => sigmoid(this.vecMatMul([this.hidden[i]], this.weights2)[0] + this.bias2[i]));
+                return this.output;
+            }
+
+            // 벡터-행렬 곱셈
+            vecMatMul(v, m) {
+                let result = [];
+                for (let i = 0; i < m[0].length; i++) {
+                    result[i] = 0;
+                    for (let j = 0; j < v.length; j++) {
+                        result[i] += v[j] * m[j][i];
+                    }
+                }
+                return result;
+            }
+
+            // 학습 함수 (Backpropagation)
+            train(input, output, learningRate = 0.1, epochs = 1000) {
+                for (let epoch = 0; epoch < epochs; epoch++) {
+                    for (let i = 0; i < input.length; i++) {
+                        this.predict(input[i]);
+
+                        // 출력층 오류
+                        let outputError = output[i].map((_, j) => this.output[j] - output[i][j]);
+
+                        // 은닉층 오류
+                        let hiddenError = this.weights2.map((_, j) => {
+                            return outputError.reduce((sum, error, k) => sum + error * this.weights2[j][k], 0);
+                        }).map((e, i) => e * (this.hidden[i] * (1 - this.hidden[i]))); // ReLU 가 아닌 Sigmoid의 미분
+
+                        // 가중치 업데이트
+                        for (let j = 0; j < this.weights2.length; j++) {
+                            for (let k = 0; k < this.weights2[0].length; k++) {
+                                this.weights2[j][k] -= learningRate * outputError[k] * this.hidden[j];
+                            }
+                        }
+
+                        for (let j = 0; j < this.weights1.length; j++) {
+                            for (let k = 0; k < this.weights1[0].length; k++) {
+                                this.weights1[j][k] -= learningRate * hiddenError[k] * this.input[j];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Titanic 모델 학습 및 예측 함수
+        async function trainAndPredict() {
+            // CSV 파일 로드
+            const trainData = await loadCSVData('train.csv');
+            const testData = await loadCSVData('test.csv');
+
+            // 데이터 전처리
+            const X_train = preprocessData(trainData);
+            const y_train = trainData.map(row => [parseInt(row['Survived'])]);
+
+            const X_test = preprocessData(testData);
+
+            // 신경망 모델 생성
+            const nn = new NeuralNetwork(4, 5, 1); // 입력: 4, 은닉층: 5, 출력: 1
+
+            // 모델 학습
+            nn.train(X_train, y_train, 0.01, 500); // 학습률 0.01, 500 epochs
+
+            // 예측
+            const predictions = X_test.map(input => nn.predict(input)[0] > 0.5 ? 1 : 0);
+
+            // 예측 결과 출력
+            document.getElementById('prediction-output').innerText = predictions.join('\n');
+        }
+
+        // 버튼 클릭 시 학습 및 예측 수행
+        document.getElementById('train-button').addEventListener('click', trainAndPredict);
+    </script>
+</body>
+</html>
