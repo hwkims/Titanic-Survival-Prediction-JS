@@ -4,6 +4,58 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Titanic Survival Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        #result {
+            margin-top: 30px;
+            font-size: 1.2em;
+            color: #007bff;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        pre {
+            font-size: 16px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f7f7f7;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
     <h1>Titanic Survival Prediction</h1>
@@ -12,6 +64,11 @@
     <div id="result">
         <h2>Prediction Results:</h2>
         <pre id="prediction-output"></pre>
+    </div>
+
+    <!-- 예측을 실행할 버튼 -->
+    <div class="button-container">
+        <button id="train-button">학습 및 예측</button>
     </div>
 
     <script>
@@ -98,7 +155,7 @@
                         // 은닉층 오류
                         let hiddenError = this.weights2.map((_, j) => {
                             return outputError.reduce((sum, error, k) => sum + error * this.weights2[j][k], 0);
-                        }).map((e, i) => e * (this.hidden[i] * (1 - this.hidden[i]))); // ReLU 가 아닌 Sigmoid의 미분
+                        }).map((e, i) => e * (this.hidden[i] * (1 - this.hidden[i]))); // Sigmoid의 미분
 
                         // 가중치 업데이트
                         for (let j = 0; j < this.weights2.length; j++) {
