@@ -108,8 +108,8 @@
                     row['Fare'] === '' ? fareMedian : parseFloat(row['Fare']),  // 결측값 처리: 중앙값으로 대체
                     row['Sex'] === 'female' ? 1 : 0, // 성별 인코딩: female -> 1, male -> 0
                     row['Embarked'] === 'C' ? 0 : row['Embarked'] === 'Q' ? 1 : 2,  // Embarked: C -> 0, Q -> 1, S -> 2
-                    row['FamilySize'] ? parseInt(row['SibSp']) + parseInt(row['Parch']) + 1 : 1, // FamilySize 처리
-                    row['FamilySize'] ? (parseInt(row['SibSp']) + parseInt(row['Parch']) + 1 === 1 ? 1 : 0) : 0,  // 혼자 있는지 여부
+                    row['SibSp'] + row['Parch'] + 1,  // FamilySize
+                    (row['SibSp'] + row['Parch'] + 1 === 1 ? 1 : 0)  // 혼자 있는지 여부
                 ];
             });
         }
