@@ -93,12 +93,23 @@
 
         // 데이터 전처리 함수
         function preprocessData(data) {
+            // Age, Fare의 중앙값 또는 평균값을 이용해 결측값 처리
+            const ageMedian = data.filter(row => row['Age'] !== '').map(row => parseFloat(row['Age'])).reduce((acc, val, _, arr) => {
+                return acc + val / arr.length;
+            }, 0);
+            const fareMedian = data.filter(row => row['Fare'] !== '').map(row => parseFloat(row['Fare'])).reduce((acc, val, _, arr) => {
+                return acc + val / arr.length;
+            }, 0);
+
             return data.map(row => {
                 return [
                     parseInt(row['Pclass']),
-                    parseInt(row['Age']) || 0,  // Age가 없으면 0으로 처리
-                    parseFloat(row['Fare']),
-                    row['Sex'] === 'female' ? 1 : 0 // Sex: female -> 1, male -> 0
+                    row['Age'] === '' ? ageMedian : parseFloat(row['Age']),  // 결측값 처리: 중앙값으로 대체
+                    row['Fare'] === '' ? fareMedian : parseFloat(row['Fare']),  // 결측값 처리: 중앙값으로 대체
+                    row['Sex'] === 'female' ? 1 : 0, // 성별 인코딩: female -> 1, male -> 0
+                    row['Embarked'] === 'C' ? 0 : row['Embarked'] === 'Q' ? 1 : 2,  // Embarked: C -> 0, Q -> 1, S -> 2
+                    row['FamilySize'] ? parseInt(row['SibSp']) + parseInt(row['Parch']) + 1 : 1, // FamilySize 처리
+                    row['FamilySize'] ? (parseInt(row['SibSp']) + parseInt(row['Parch']) + 1 === 1 ? 1 : 0) : 0,  // 혼자 있는지 여부
                 ];
             });
         }
@@ -187,7 +198,7 @@
             const X_test = preprocessData(testData);
 
             // 신경망 모델 생성
-            const nn = new NeuralNetwork(4, 5, 1); // 입력: 4, 은닉층: 5, 출력: 1
+            const nn = new NeuralNetwork(7, 5, 1); // 입력: 7, 은닉층: 5, 출력: 1
 
             // 모델 학습
             nn.train(X_train, y_train, 0.01, 500); // 학습률 0.01, 500 epochs
