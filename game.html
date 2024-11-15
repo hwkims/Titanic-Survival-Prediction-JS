@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Titanic Survival Prediction</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-size: cover;
+            background-position: center;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: backgroundAnimation 60s infinite alternate;
+        }
+
+        @keyframes backgroundAnimation {
+            0% {
+                background-image: url('bg (1).jpg');
+            }
+            25% {
+                background-image: url('bg (2).jpg');
+            }
+            50% {
+                background-image: url('bg (3).jpg');
+            }
+            75% {
+                background-image: url('bg (4).jpg');
+            }
+            100% {
+                background-image: url('bg (1).jpg');
+            }
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            width: 450px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #fff;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7); /* Stronger text shadow for better readability */
+        }
+
+        label {
+            font-size: 16px;
+            display: block;
+            margin-bottom: 8px;
+            color: #f1f1f1;
+            text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.5); /* Added text shadow for better visibility */
+        }
+
+        input[type="range"], input[type="number"], input[type="radio"] {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            color: #333; /* Darker text for readability */
+            text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3); /* Added text shadow for inputs */
+        }
+
+        .range-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .range-slider {
+            width: 80%;
+            margin-right: 10px;
+        }
+
+        .range-label {
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .radio-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .radio-buttons label {
+            font-size: 18px;
+            text-shadow: 1px 1px 6px rgba(0, 0, 0, 0.4); /* Added text shadow for radio labels */
+        }
+
+        .radio-buttons input {
+            margin-right: 5px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff; /* Blue Button */
+            color: white;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s, box-shadow 0.3s;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.4); /* Button shadow */
+        }
+
+        .btn:hover {
+            background-color: #0056b3;
+            box-shadow: 0px 6px 20px rgba(0, 0, 0, 0.6); /* Enhanced shadow on hover */
+        }
+
+        .result {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7); /* Added text shadow */
+        }
+
+        .result.success {
+            color: #4CAF50; /* Green for survival */
+        }
+
+        .result.fail {
+            color: #e74c3c; /* Red for death */
+        }
+
+        .emoji {
+            font-size: 22px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Titanic Survival Prediction</h1>
+    <form id="surveyForm">
+        <label for="age">Age</label>
+        <div class="range-wrapper">
+            <input type="range" id="age" name="age" min="1" max="100" value="25" class="range-slider">
+            <span class="range-label" id="ageLabel">25</span>
+        </div>
+
+        <label>Gender</label>
+        <div class="radio-buttons">
+            <label>
+                <input type="radio" name="sex" value="male" checked> 🧔 Male
+            </label>
+            <label>
+                <input type="radio" name="sex" value="female"> 👩‍🦰 Female
+            </label>
+        </div>
+
+        <label for="fare">Fare</label>
+        <div class="range-wrapper">
+            <input type="range" id="fare" name="fare" min="0" max="1000" value="100" class="range-slider">
+            <span class="range-label" id="fareLabel">$100</span>
+        </div>
+
+        <label for="pclass">Passenger Class (Auto Assigned)</label>
+        <input type="text" id="pclass" name="pclass" readonly value="2nd Class">
+
+        <button type="submit" class="btn">Predict Survival</button>
+    </form>
+
+    <div id="result" class="result"></div>
+</div>
+
+<script>
+    // Age Slider and Label Sync
+    const ageSlider = document.getElementById('age');
+    const ageLabel = document.getElementById('ageLabel');
+    ageSlider.addEventListener('input', function() {
+        ageLabel.textContent = ageSlider.value;
+    });
+
+    // Fare Slider and Label Sync
+    const fareSlider = document.getElementById('fare');
+    const fareLabel = document.getElementById('fareLabel');
+    fareSlider.addEventListener('input', function() {
+        fareLabel.textContent = `$${fareSlider.value}`;
+        
+        // Set Passenger Class based on Fare
+        let fareValue = parseInt(fareSlider.value);
+        let pclassValue;
+        
+        if (fareValue > 200) {
+            pclassValue = '1st Class';
+        } else if (fareValue > 100) {
+            pclassValue = '2nd Class';
+        } else {
+            pclassValue = '3rd Class';
+        }
+        
+        document.getElementById('pclass').value = pclassValue;
+    });
+
+    // Form submission and survival prediction logic
+    document.getElementById('surveyForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        
+        let age = parseInt(ageSlider.value);
+        let sex = document.querySelector('input[name="sex"]:checked').value;
+        let fare = parseFloat(fareSlider.value);
+        let pclass = document.getElementById('pclass').value;
+
+        let resultText = '';
+        let resultClass = '';
+
+        // Survival prediction based on simple rules
+        if (age < 12 || (sex === 'female' && fare > 50) || (pclass === '1st Class' && fare > 100)) {
+            resultText = 'Survival Likely 👍';
+            resultClass = 'success';
+        } else {
+            resultText = 'Dead 💀';
+            resultClass = 'fail';
+        }
+
+        // Display result
+        const resultElement = document.getElementById('result');
+        resultElement.textContent = resultText;
+        resultElement.className = 'result ' + resultClass;
+    });
+</script>
+
+</body>
+</html>
